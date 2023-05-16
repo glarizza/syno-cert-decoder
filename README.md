@@ -44,8 +44,20 @@ NOTE: Python 3.9 is the most recent Python package available to my NAS as of the
 of this writing, so that's the version I'll be using.
 
 Once you've got a virtual environment setup on your NAS, the next thing you need
-to do is to generate a wheel file for this tool - the cert decoder. I have a
-make task dedicated for this action:
+to do is ensure that the required Python packages are installed in your virtual
+environment. Normally we could do this via `make` targets I've exposed via the
+`Makefile` in the repo, but `make` is not available on the NAS (and I really
+don't wanna go down that route). The easiest way for me to do this has been to
+copy the `requirements.txt` file over to the virtual environment, and use the `pip`
+binary in the virtual environment to install the package dependencies. Execute
+the following from within your virtual environment folder:
+
+```bash
+./.venv/bin/pip install -r /path/to/requirements.txt
+```
+
+Now we need to generate a wheel file for this tool - the cert decoder. I have a
+make task dedicated for this action that can be run from your laptop:
 
 ```bash
 make dist

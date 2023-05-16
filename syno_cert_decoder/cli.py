@@ -1,4 +1,4 @@
-"""Command line tool that extracts individual PEM from a single JSON datafile.
+"""Command line tool that extracts individual PEM files from a single JSON datafile.
 
 This is a companion tool for this Synology SSL workflow:
 https://reddec.net/articles/how-to-get-ssl-on-synology/ Using the syno-cli
@@ -14,6 +14,7 @@ import debugpy
 from pathlib import Path
 from syno_cert_decoder import __version__
 from syno_cert_decoder.syno_cert_decoder import SynoCertDecoder
+import typing as t
 
 app = typer.Typer()
 
@@ -55,7 +56,7 @@ def write_pem_files(
     individual PEM files to disk at the given output path.  For example:
 
     \b
-    syno_cert_decoder decode write-pem-files --json-file /volume1/docker/syno-cli/grafana.pdxravefam.com.json --output-path /volume1/docker/certificates/
+    syno_cert_decoder write-pem-files --json-file /volume1/docker/syno-cli/myservice.mydomain.com.json --output-path /volume1/docker/certificates/
 
     That command results in the following PEM files:
 
@@ -64,14 +65,45 @@ def write_pem_files(
     total 16K
     drwxrwxrwx+ 1 glarizza users  204 May 15 15:03  .
     drwxrwxrwx+ 1 root     root   360 May 15 14:59  ..
-    -rwxrwxrwx+ 1 glarizza users 5.5K May 15 15:06 'grafana.pdxravefam.com-certificate.pem'
-    -rwxrwxrwx+ 1 glarizza users 3.7K May 15 15:06 'grafana.pdxravefam.com-issuer_certificate.pem'
-    -rwxrwxrwx+ 1 glarizza users 1.7K May 15 15:06 'grafana.pdxravefam.com-privateKey.pem'
+    -rwxrwxrwx+ 1 glarizza users 5.5K May 15 15:06 'myservice.mydomain.com-certificate.pem'
+    -rwxrwxrwx+ 1 glarizza users 3.7K May 15 15:06 'myservice.mydomain.com-issuer_certificate.pem'
+    -rwxrwxrwx+ 1 glarizza users 1.7K May 15 15:06 'myservice.mydomain.com-privateKey.pem'
     """
     typer.echo(f"Parsing file at {json_file}")
     SynoCertDecoder(
         datafile_path=Path(json_file), output_path=Path(output_path)
     ).write_pem_files()
+
+
+@app.command()
+def pkcs12(
+    json_file: str = typer.Option(
+        ...,
+        envvar="SYNO_JSON_FILE",
+        help="The path to the JSON file that includes the encoded certificate, key, and issuer cert.",
+    ),
+    passphrase: t.Optional[str] = typer.Option(
+        default=None,
+        help="The passphrase to use for the private key (leave empty if not needed).",
+    ),
+    output_file: Path = typer.Option(
+        ...,
+        help="The path to the file that will be created (e.x. myservice.mydomain.com.pfx).",
+    ),
+):
+    """Create a PKCS12 PFX file from a JSON data file.
+
+    This command allows you to generate a PKCS12 PFX file from JSON certificate
+    data file that contains the certificate and private key in PEM format. For
+    example:
+
+    \b
+    syno_cert_decoder pkcs12  --json-file /volume1/docker/syno-cli/myservice.mydomain.com.json --passphrase "" --output-file /volume1/docker/certificates/myservice.mydomain.com.pfx
+    """
+    typer.echo(f"Parsing file at {json_file}")
+    SynoCertDecoder(
+        datafile_path=Path(json_file), output_path=output_file.parent
+    ).pkcs12(passphrase=passphrase, filename=output_file.name)
 
 
 if __name__ == "__main__":

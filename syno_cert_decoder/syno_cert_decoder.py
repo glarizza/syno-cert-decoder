@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import typer
 import typing as t
+import OpenSSL
 
 
 @dataclass
@@ -36,17 +37,17 @@ class SynoCertDecoder:
         pemdata = {}
         jsondata = json.loads(self.read_data_file())
         for item in ["privateKey", "certificate", "issuer_certificate"]:
-            pemdata[item] = base64.b64decode(jsondata[item]).decode("utf-8")
+            pemdata[item] = base64.b64decode(jsondata[item])
         return pemdata
 
-    def write_file(self, file_path: Path, data: str):
+    def write_file(self, file_path: Path, data: t.ByteString):
         """Convenience method for writing a file.
 
         Args:
             file_path (Path): The path to where the file will be written.
             data (str): The contents of the file to be written.
         """
-        with open(file_path, "w") as outfile:
+        with open(file_path, "wb") as outfile:
             outfile.write(data)
 
     def write_pem_files(self):
@@ -60,3 +61,26 @@ class SynoCertDecoder:
             output_file = self.output_path / f"{self.datafile_path.stem}-{certitem}.pem"
             typer.echo(f"Writing {output_file} data now...")
             self.write_file(file_path=output_file, data=certdata)
+
+    def pkcs12(self, passphrase: t.Optional[str], filename: str):
+        """Create a PKCS12 PFX file from a JSON data file.
+
+        This method reads a JSON file containing Base64-encoded PEM files and
+        creates a new PKCS12 PFX file from the encoded data. A passphrase
+        can be provided if the private key requires one.
+        """
+        certdata = self.prepare_pem_data()
+        pkcs = OpenSSL.crypto.PKCS12()
+        pkcs.set_privatekey(
+            OpenSSL.crypto.load_privatekey(
+                OpenSSL.crypto.FILETYPE_PEM, certdata["privateKey"], passphrase
+            )
+        )
+        pkcs.set_certificate(
+            OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, certdata["certificate"]
+            )
+        )
+        output_file = self.output_path / filename
+        typer.echo(f"Writing {output_file} now...")
+        self.write_file(file_path=output_file, data=pkcs.export(passphrase=passphrase))

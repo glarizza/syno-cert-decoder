@@ -1,0 +1,19 @@
+wheel==0.37.0
+# Command and subcommand flag parser library
+typer>=0.4.0,<2.0.0
+# File watcher to run tests on file changes
+watchdog==2.1.6
+# For documentation generation
+Sphinx==4.2.0
+# Markdown support for documentation generation
+myst-parser==0.15.2
+# Package distribution
+twine==3.4.2
+# Formatting and style
+black==23.1.0
+# Testing tools
+tox==3.24.4
+pylint==2.11.1
+pytest==6.2.5
+coverage==6.0.2
+debugpy==1.5.1

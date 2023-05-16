@@ -1,0 +1,2 @@
+# Command and subcommand flag parser library
+typer>=0.4.0,<2.0.0
